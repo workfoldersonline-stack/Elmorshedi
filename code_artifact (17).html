@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>منصة المسابقات التفاعلية السحابية - التجارة الإلكترونية</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Cairo -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Tone.js for Sound Effects -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- QRCode.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Cairo', 'sans-serif'] },
+                    animation: {
+                        'bounce-slow': 'bounce 2s infinite',
+                        'pop': 'pop 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
+                    },
+                    keyframes: {
+                        pop: {
+                            '0%': { transform: 'scale(0.6)', opacity: '0' },
+                            '100%': { transform: 'scale(1)', opacity: '1' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: radial-gradient(circle at top right, #1e1b4b, #0f172a, #020617);
+            color: #f8fafc;
+            overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .glass-card {
+            background: rgba(30, 41, 59, 0.92);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.96);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(99, 102, 241, 0.25);
+        }
+        .option-btn {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .option-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px -4px rgba(79, 70, 229, 0.4);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-indigo-500 selection:text-white">
+
+    <!-- Top Navigation (Teacher Header) -->
+    <header id="teacher-header" class="glass-panel sticky top-0 z-50 px-4 py-3 shadow-lg border-b border-indigo-500/30">
+        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-500 flex items-center justify-center shadow-md shadow-indigo-500/30">
+                    <i class="fa-solid fa-cloud-bolt text-white text-xl"></i>
+                </div>
+                <div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h1 class="font-black text-base md:text-lg tracking-wide text-white">منصة التفاعل المباشر السحابية</h1>
+                        <span class="text-xs bg-amber-500/20 text-amber-300 border border-amber-400/40 px-3 py-0.5 rounded-full font-extrabold shadow-sm">
+                            <i class="fa-solid fa-pen-nib ml-1 text-[10px]"></i>إعداد أ . تامر مجدي المرشدي
+                        </span>
+                    </div>
+                    <p class="text-xs text-slate-400 hidden sm:block">مسابقة التجارة الإلكترونية والتعاملات عبر الإنترنت (سحابي متكامل)</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <button onclick="toggleSound()" id="sound-btn" class="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 text-indigo-400 flex items-center justify-center border border-slate-700 transition" title="كتم/تشغيل الصوت">
+                    <i class="fa-solid fa-volume-high" id="sound-icon"></i>
+                </button>
+                <button onclick="openQuestionManager()" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs md:text-sm font-bold border border-slate-700 transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-list-check text-indigo-400"></i>
+                    <span class="hidden md:inline">بنك الأسئلة (30)</span>
+                </button>
+                <button onclick="resetCompetition()" class="px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs md:text-sm font-bold border border-rose-500/30 transition" title="إعادة ضبط">
+                    <i class="fa-solid fa-rotate-right"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 flex flex-col justify-center items-center">
+
+        <!-- ================= TEACHER PANEL ================= -->
+        <section id="teacher-panel" class="w-full max-w-5xl glass-card rounded-3xl p-5 md:p-8 shadow-2xl relative flex flex-col justify-between min-h-[620px] border-t-4 border-t-indigo-500">
+            <div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-700/60">
+                <div class="flex items-center gap-3">
+                    <span class="px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-xs font-bold flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                        لوحة تحكم المعلم السحابية
+                    </span>
+                    <span class="text-xs font-bold text-amber-300 bg-amber-500/10 px-3 py-1 rounded-lg border border-amber-500/30">
+                        إعداد أ . تامر مجدي المرشدي
+                    </span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-2 bg-slate-900/90 px-3 py-1.5 rounded-xl border border-slate-700">
+                        <i class="fa-solid fa-users text-emerald-400 text-sm"></i>
+                        <span id="teacher-player-count" class="font-black text-white text-base">0 طالباً</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Teacher Stage Container -->
+            <div id="teacher-stage" class="my-auto py-4 flex-1 flex flex-col justify-center"></div>
+
+            <!-- Teacher Action Controls -->
+            <div class="pt-4 border-t border-slate-700/60 flex flex-wrap items-center justify-between gap-3">
+                <div class="flex items-center gap-2 flex-wrap">
+                    <button onclick="toggleLeaderboardBarModal()" class="px-3 py-2 rounded-xl bg-amber-600/20 hover:bg-amber-600/30 text-amber-300 border border-amber-500/30 text-xs font-bold transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-chart-bar"></i>
+                        <span>شريط تقدم الترتيب (Bar)</span>
+                    </button>
+                    <button onclick="fillUpTo30Students()" class="px-3 py-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-xs font-bold transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-users-gear"></i>
+                        <span>محاكاة طلاب</span>
+                    </button>
+                    <button onclick="clearAllStudents()" class="px-3 py-2 rounded-xl bg-rose-600/15 hover:bg-rose-600/25 text-rose-300 border border-rose-500/30 text-xs font-bold transition">
+                        تفريغ الطلاب
+                    </button>
+                </div>
+                <div id="teacher-action-buttons" class="flex items-center gap-2"></div>
+            </div>
+        </section>
+
+        <!-- ================= STUDENT PANEL (Dedicated Student View) ================= -->
+        <section id="student-panel" class="w-full max-w-md glass-card rounded-[2.5rem] p-5 shadow-2xl border-4 border-slate-700/80 relative flex flex-col justify-between min-h-[600px] bg-slate-900/95 hidden">
+            <div class="w-20 h-1.5 bg-slate-700 rounded-full mx-auto mb-2"></div>
+            <div class="text-center mb-1 flex items-center justify-between">
+                <span class="text-[11px] font-bold text-amber-300 bg-amber-500/10 border border-amber-500/30 px-3 py-0.5 rounded-full">
+                    إعداد أ . تامر مجدي المرشدي
+                </span>
+                <span class="text-[10px] text-slate-400 bg-slate-800 px-2.5 py-1 rounded-lg">جهاز الطالب</span>
+            </div>
+
+            <div class="flex items-center justify-between px-3 py-2 bg-slate-800/90 rounded-2xl border border-slate-700/70 mb-3">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-sm font-bold">
+                        <i class="fa-solid fa-user-graduate"></i>
+                    </div>
+                    <div>
+                        <p id="student-name-display" class="text-xs font-bold text-white leading-tight">غير مسجل</p>
+                        <p id="student-status-text" class="text-[11px] text-emerald-400">أدخل اسمك للانضمام</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <button onclick="logoutStudent()" id="switch-student-btn" class="hidden px-2.5 py-1 rounded-lg bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-200 border border-indigo-400/30 text-[10px] font-bold transition">
+                        خروج
+                    </button>
+                    <div class="flex items-center gap-1 bg-slate-900 px-2.5 py-1 rounded-xl border border-slate-700">
+                        <i class="fa-solid fa-star text-amber-400 text-xs"></i>
+                        <span id="student-score-display" class="font-black text-sm text-white">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Student Stage -->
+            <div id="student-stage" class="flex-1 flex flex-col justify-center p-1"></div>
+        </section>
+
+    </main>
+
+    <!-- Question Manager Modal -->
+    <div id="question-modal" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="glass-panel rounded-3xl max-w-4xl w-full max-h-[88vh] flex flex-col shadow-2xl border border-indigo-500/30 overflow-hidden animate-pop">
+            <div class="p-5 border-b border-slate-700 flex items-center justify-between bg-slate-900/60">
+                <div class="flex items-center gap-3">
+                    <i class="fa-solid fa-layer-group text-indigo-400 text-xl"></i>
+                    <h2 class="text-lg font-black text-white">بنك أسئلة المسابقة (30 سؤالاً - 30 ثانية لكل سؤال)</h2>
+                </div>
+                <button onclick="closeQuestionManager()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-rose-500/20 text-slate-400 flex items-center justify-center transition">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="p-5 overflow-y-auto space-y-2.5 flex-1" id="questions-list-container"></div>
+            <div class="p-4 border-t border-slate-700 bg-slate-900/60 flex justify-end">
+                <button onclick="closeQuestionManager()" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold">إغلاق وحفظ</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Live Leaderboard Bar Modal -->
+    <div id="leaderboard-bar-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="glass-panel rounded-3xl max-w-3xl w-full max-h-[85vh] flex flex-col shadow-2xl border border-amber-500/30 overflow-hidden animate-pop">
+            <div class="p-5 border-b border-slate-700 flex items-center justify-between bg-slate-900/80">
+                <div class="flex items-center gap-3">
+                    <i class="fa-solid fa-chart-bar text-amber-400 text-xl"></i>
+                    <h2 class="text-base md:text-lg font-black text-white">شريط تقدم ترتيب الطلاب (من الأول إلى الأخير)</h2>
+                </div>
+                <button onclick="toggleLeaderboardBarModal()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-rose-500/20 text-slate-400 flex items-center justify-center transition">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="p-6 overflow-y-auto space-y-3 flex-1" id="leaderboard-bar-container"></div>
+            <div class="p-4 border-t border-slate-700 bg-slate-900/80 flex justify-between items-center">
+                <span class="text-xs text-slate-400"><i class="fa-solid fa-circle-notch fa-spin text-amber-400 ml-1"></i> متصل سحابياً باللحظة</span>
+                <button onclick="toggleLeaderboardBarModal()" class="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold">إغلاق</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast-box" class="fixed top-20 left-1/2 -translate-x-1/2 z-50 pointer-events-none opacity-0 transition-all duration-300 transform -translate-y-2">
+        <div class="bg-indigo-600 text-white px-5 py-2.5 rounded-2xl shadow-xl border border-indigo-400/40 flex items-center gap-2 text-sm font-bold">
+            <i class="fa-solid fa-bell"></i>
+            <span id="toast-message">تم</span>
+        </div>
+    </div>
+
+    <!-- Firebase Imports with Valid Even-Segment Path Structure -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+
+        let app, db, auth;
+        try {
+            app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+        } catch(e) {
+            console.error("Firebase init error", e);
+        }
+
+        window.db = db;
+        window.auth = auth;
+        // Valid collection/document path (even segments count)
+        window.firebaseModules = { doc, setDoc, getDoc, onSnapshot, signInAnonymously };
+    </script>
+
+    <script>
+        let baseQuestions = [
+            { id: 1, lesson: "الدرس الأول", question: "ما المصطلح الذي يُطلق على كافة أشكال التعاملات التجارية وعمليات بيع المنتجات أو الخدمات عبر الإنترنت؟", options: ["التجارة الإلكترونية (E-commerce)", "الأرشفة الورقية", "البرمجة الهيكلية", "الصيانة المكتبية"], correct: 0, timeLimit: 30, explanation: "التجارة الإلكترونية تشمل كافة أشكال التعاملات وبيع المنتجات والخدمات عبر الإنترنت." },
+            { id: 2, lesson: "الدرس الأول", question: "أيٌّ مما يلي يُعد من الأنظمة والأدوات التقنية المتلزمة لتقديم خدمات التجارة الإلكترونية؟", options: ["البريد الإلكتروني وأنظمة إدارة موارد الشركة وتتبع التوصيل", "دفاتر الفواتير اليدوية", "أجهزة الفاكس", "الآلات الكاتبة"], correct: 0, timeLimit: 30, explanation: "تعتمد التجارة الإلكترونية على البريد، إدارة موارد الشركة، وتتبع التوصيل." },
+            { id: 3, lesson: "الدرس الأول", question: "من مزايا التجارة الإلكترونية بالنسبة لأصحاب المتاجر:", options: ["توسيع الأسواق وقلة تكاليف الصيانة مقارنة بالمتجر الواقعي", "استحالة المقارنة", "وجوب حضور المشتري", "ارتفاع نسبة الأخطاء"], correct: 0, timeLimit: 30, explanation: "تتميز بتوسيع الأسواق وقلة تكاليف الصيانة وعدم الاعتماد على المجتمع المحلي." },
+            { id: 4, lesson: "الدرس الأول", question: "من عيوب التجارة الإلكترونية بالنسبة للعميل:", options: ["عدم إمكانية معاينة المنتج على الواقع والانتظار لشحنه", "توفير وصف تفصيلي", "إمكانية الشراء بأي وقت", "انخفاض التكاليف"], correct: 0, timeLimit: 30, explanation: "من العيوب عدم القدرة على معاينة المنتج واقعياً والانتظار لاستلامه." },
+            { id: 5, lesson: "الدرس الأول", question: "ما نموذج التجارة الإلكترونية الذي يتم فيه تبادل المنتجات أو الخدمات بين الشركات؟", options: ["شركة إلى شركة (B2B)", "شركة إلى مستهلك (B2C)", "مستهلك إلى مستهلك (C2C)", "سلعة افتراضية"], correct: 0, timeLimit: 30, explanation: "نموذج B2B هو التبادل الإلكتروني بين الشركات." },
+            { id: 6, lesson: "الدرس الأول", question: "ما الخدمة المدفوعة التي تقدمها أمازون لتخزين منتجات المتاجر وتغليفها وشحنها؟", options: ["خدمة الوفاء من أمازون (FBA)", "التصميم الجرافيكي", "بروتوكول SSL", "إدارة البيانات"], correct: 0, timeLimit: 30, explanation: "FBA هي خدمة أمازون لتخزين وتغليف وشحن بضائع المتاجر." },
+            { id: 7, lesson: "الدرس الأول", question: "نموذج التجارة الإلكترونية التي تبيع فيه الشركات المنتجات بشكل مباشر للمستهلكين هو:", options: ["شركة إلى مستهلك (B2C)", "شركة إلى شركة (B2B)", "مستهلك إلى مستهلك (C2C)", "مستهلك إلى شركة"], correct: 0, timeLimit: 30, explanation: "نموذج B2C يتم فيه البيع المباشر من الشركات للمستهلكين." },
+            { id: 8, lesson: "الدرس الأول", question: "من أبرز الأمثلة على نموذج مستهلك إلى مستهلك (C2C) للمزادات عبر الإنترنت:", options: ["موقع إيباي (eBay)", "شركة سيسكو", "شركة إنتل", "متجر إحسان الخيري"], correct: 0, timeLimit: 30, explanation: "موقع eBay يعتبر من أشهر أمثلة المزادات C2C." },
+            { id: 9, lesson: "الدرس الأول", question: "الأسواق الإلكترونية (E-marketplace) هي نوع من مواقع التجارة التي يتم توفير الخدمات فيها من قبل:", options: ["طرف ثالث، بينما تتم معالجة التعاملات من مشغل السوق", "المستهلك فقط", "الشركة المصنعة محلياً", "الحكومة مباشرة"], correct: 0, timeLimit: 30, explanation: "تتوفر الخدمات من طرف ثالث وتتم المعالجة عبر مشغل السوق." },
+            { id: 10, lesson: "الدرس الأول", question: "الأسواق الموجهة للمورد (Supplier-Oriented) تستخدمها بكثرة شركات:", options: ["التصنيع وخاصة الإلكترونيات (مثل سيسكو وإنتل)", "الملابس الجاهزة", "الأغذية الطازجة", "المقاولات الإنشائية"], correct: 0, timeLimit: 30, explanation: "الأسواق الموجهة للمورد تستخدمها شركات التصنيع كإنتل وسيسكو." },
+            { id: 11, lesson: "الدرس الأول", question: "الأسواق الموجهة للمشتري (Buyer-Oriented) يُستخدمها الموردون لعرض البضائع لفئة محددة مثل:", options: ["شركة جنرال إلكتريك (GE) المتخصصة في الطاقة", "موقع eBay", "متجر إحسان", "موقع علي بابا"], correct: 0, timeLimit: 30, explanation: "شركة جنرال إلكتريك مثال على الأسواق الموجهة للمشتري." },
+            { id: 12, lesson: "الدرس الأول", question: "ما المقصود بالسلع الافتراضية (Virtual Goods)؟", options: ["أصل غير ملموس يتم تداوله في اقتصاد افتراضي (كالألعاب وبرمجيات الإنترنت)", "البضائع المادية المشحونة بالبريد", "الأثاث المكتبي", "السيارات الكهربائية"], correct: 0, timeLimit: 30, explanation: "السلع الافتراضية أصول غير ملموسة كالبرمجيات والألعاب." },
+            { id: 13, lesson: "الدرس الأول", question: "من أمثلة الأسواق الافتراضية للسلع غير الملموسة والخيرية في المملكة:", options: ["متجر إحسان الخيري الإلكتروني (ehsan.sa/subsidy)", "موقع أمازون", "موقع eBay", "موقع علي بابا"], correct: 0, timeLimit: 30, explanation: "متجر إحسان الخيري يعزز فرص التبرع الفردي للحالات المحتاجة." },
+            { id: 14, lesson: "الدرس الأول", question: "ما هي الأداة المستخدمة لإنشاء بيئة محلية متطورة لووردبريس لاختبار المتاجر الإلكترونية؟", options: ["LocalWP (localwp.com)", "Photoshop", "Excel", "PowerPoint"], correct: 0, timeLimit: 30, explanation: "أداة LocalWP تستخدم لإنشاء بيئة ووردبريس محلية للتدرب على التسوق." },
+            { id: 15, lesson: "الدرس الأول", question: "بعد إضافة المنتج إلى سلة المشتريات، الخطوة الصحيحة قبل الدفع هي:", options: ["الضغط على عرض السلة للتأكد من المنتجات والعدد الصحيح", "إغلاق المتجر فوراً", "حذف المتصفح", "إعادة تشغيل الجهاز"], correct: 0, timeLimit: 30, explanation: "يجب دائماً مراجعة سلة المشتريات والعدد الصحيح قبل إتمام الدفع." },
+            { id: 16, lesson: "الدرس الثاني", question: "معاملة تتم عبر شبكة محوسبة إما بين حسابات في نفس المصرف أو مؤسسات مالية منفصلة تُسمى:", options: ["التحويل الإلكتروني للأموال (EFT)", "التسويق الإلكتروني", "التبادل الورقي", "إدارة المخزون"], correct: 0, timeLimit: 30, explanation: "EFT هو التحويل الإلكتروني للأموال عبر الشبكة المحوسبة." },
+            { id: 17, lesson: "الدرس الثاني", question: "عملية تبادل المعلومات التجارية إلكترونياً (كأوامر الشراء والفواتير) بدلاً من الورقي تُسمى:", options: ["التبادل الإلكتروني للبيانات (EDI)", "التسويق الرقمي", "الدفع النقدي", "الشحن السريع"], correct: 0, timeLimit: 30, explanation: "EDI يحل محل التبادل الورقي للفواتير وأوامر الشراء." },
+            { id: 18, lesson: "الدرس الثاني", question: "عملية الإشراف على البضائع وتدفقها من الموردين إلى المستودعات ثم نقاط البيع تسمى:", options: ["إدارة المخزون (Inventory Management)", "التسويق الإلكتروني", "التوزيع الرقمي", "التشفير"], correct: 0, timeLimit: 30, explanation: "إدارة المخزون تشرف على تدفق البضائع وتسجيل السجلات." },
+            { id: 19, lesson: "الدرس الثاني", question: "عملية إيصال محتوى وسائط رقمية (صوت، فيديو، كتب إلكترونية) عبر الإنترنت تسمى:", options: ["التوزيع الرقمي (Digital Distribution)", "الشحن البريدي التقليدي", "التبادل الورقي", "البيع بالمزاد العلني"], correct: 0, timeLimit: 30, explanation: "التوزيع الرقمي يوصل الوسائط عبر الإنترنت دون أقراص ضوئية." },
+            { id: 20, lesson: "الدرس الثاني", question: "منظومة الدفع الوطني في المملكة العربية السعودية التي تدعم نقاط البيع والمتاجر الإلكترونية:", options: ["بطاقات مدى (mada)", "شيكات بنكية", "الحوالات البرقية الورقية", "الدفع بالعملات المعدنية"], correct: 0, timeLimit: 30, explanation: "مدى هي منظومة الدفع الوطنية لدعم نقاط البيع والمتاجر." },
+            { id: 21, lesson: "الدرس الثاني", question: "ما تقنية الاتصال التي تتيح الدفع بلمس الهاتف لجهاز القارئ دون إدخال البطاقة (Contactless)؟", options: ["الاتصال قريب المدى (NFC)", "البلوتوث القديم", "الأشعة تحت الحمراء", "واي فاي المدارس"], correct: 0, timeLimit: 30, explanation: "تقنية NFC تمكن من الدفع اللاملامس بلمس الهاتف للقارئ." },
+            { id: 22, lesson: "الدرس الثاني", question: "المحفظة الإلكترونية (E-Wallet) المحمية بكلمة مرور تتكون أساساً من:", options: ["البرنامج (للأمان والتشفير) والمعلومات (قاعدة بيانات تفاصيل المستخدم)", "أوراق نقدية ومعدنية", "بطاقات بلاستيكية فقط", "مفاتيح خشبية"], correct: 0, timeLimit: 30, explanation: "تتكون المحفظة من البرنامج (للأمان والتشفير) وقاعدة بيانات المعلومات." },
+            { id: 23, lesson: "الدرس الثاني", question: "أبزر المحافظ الرقمية التي تقدمها شركات عالمية:", options: ["أبل باي (Apple Pay) ومايكروسوفت باي وسامسونج باي", "محافظ الجلد الطبيعي", "الصناديق الحديدية", "الحافظات الورقية"], correct: 0, timeLimit: 30, explanation: "Apple Pay و Samsung Pay من المحافظ الرقمية الشهيرة." },
+            { id: 24, lesson: "الدرس الثاني", question: "معالج دفع عالمي شهير يتيح الدفع بضغطة واحدة ويحمي سرية بيانات بطاقة الائتمان:", options: ["باي بال (PayPal)", "البريد الممتاز", "الفاكس الآلي", "الشيك السياحي"], correct: 0, timeLimit: 30, explanation: "PayPal يدير نظام دفع عالمي ويدعم الدفع بضغطة واحدة." },
+            { id: 25, lesson: "الدرس الثاني", question: "بروتوكول أمان مدمج في المتصفحات لتشفير المعلومات المرسلة للخادم يُعرف بـ:", options: ["طبقة المقابس الآمنة SSL وتشفير TLS", "بروتوكول FTP البسيط", "بروتوكول النص العادي HTTP", "بروتوكول الطباعة المؤقتة"], correct: 0, timeLimit: 30, explanation: "SSL و TLS يشفران البيانات المتبادلة بين المتصفح والخادم." },
+            { id: 26, lesson: "الدرس الثاني", question: "كيف تتأكد أن صفحة المتجر آمنة قبل إدخال بياناتك الحساسة؟", options: ["وجود رمز قفل صغير وأن يبدأ الرابط بـ https:// بدلاً من http://", "أن يكون لون الشاشة أزرق فاتح", "وجود صورة سيارة في الأعلى", "سرعة التحميل العالية"], correct: 0, timeLimit: 30, explanation: "وجود قفل ورابط يبدأ بـ https يدل على الاتصال الآمن والمشفر." },
+            { id: 27, lesson: "الدرس الثاني", question: "عناصر تعرض على المواقع لمساعدة العملاء على الشعور بالأمان والتحقق من مصداقية الموقع تُسمى:", options: ["إشارات الثقة (Trust Signals مثل شعار فيزا ونورتون سيل)", "إعلانات البانر التجارية", "الروابط الإضافية", "أزرار الإغلاقوث"], correct: 0, timeLimit: 30, explanation: "إشارات الثقة كالشهادات الرقمية تطمئن العملاء بأن أموالهم آمنة." },
+            { id: 28, lesson: "الدرس الثاني", question: "من إشارات التحذير وعلامات الاحتيال الإلكتروني:", options: ["التخفيضات الكبيرة المبالغ فيها، تصميم رديء، أو استخدام بريد مجاني (Yahoo/Gmail)", "وجود قفل الأمان SSL", "وضوح سياسة الخصوصية وسجل الشركة", "وجود شعار نورتون المعتمد"], correct: 0, timeLimit: 30, explanation: "التصميم الرديء والتخفيضات الخيالية والبريد المجاني علامات احتيال." },
+            { id: 29, lesson: "الدرس الثاني", question: "بعد الانتهاء من عملية الشراء وتقديم طلبك عبر المتجر الإلكتروني، كإجراء أمني يجب:", options: ["الخروج وتسجيل الخروج من حسابك في المتجر الإلكتروني", "حذف متصفح الإنترنت نهائياً", "إيقاف جهاز الحاسب عن العمل", "تغيير شاشة الجوال"], correct: 0, timeLimit: 30, explanation: "تسجيل الخروج بعد الشراء إجراء أمني لحماية البيانات المحفوظة." },
+            { id: 30, lesson: "الدرس الثاني", question: "ما هي ميزة استخدام نظام المصادقة المزدوجة (Two-Factor Authentication)؟", options: ["توفير طبقة حماية إضافية لكلمة المرور ومنع الاختراق", "تسريع سرعة الإنترنت", "تقليل تكلفة الشحن", "إلغاء الحاجة لكلمة المرور تماماً"], correct: 0, timeLimit: 30, explanation: "المصادقة المزدوجة تضيف طبقة أمان ثانية لحماية الحسابات." }
+        ];
+
+        let questions = JSON.parse(JSON.stringify(baseQuestions));
+        let currentQuestionIndex = 0;
+        let students = [];
+        let currentStudentId = null;
+        let gameState = 'waiting'; 
+        let timeLeft = 30;
+        let isTimerPaused = false;
+        let soundEnabled = true;
+        let isStudentMode = false;
+        let timerInterval = null;
+
+        const synth = new Tone.Synth().toDestination();
+        function playSound(type) {
+            if (!soundEnabled) return;
+            try {
+                if (type === 'correct') {
+                    synth.triggerAttackRelease('C5', '8n', Tone.now());
+                    setTimeout(() => synth.triggerAttackRelease('G5', '8n', Tone.now()), 100);
+                } else if (type === 'wrong') {
+                    synth.triggerAttackRelease('G3', '8n', Tone.now());
+                } else if (type === 'click') {
+                    synth.triggerAttackRelease('E5', '16n', Tone.now());
+                } else if (type === 'start') {
+                    synth.triggerAttackRelease('C4', '8n', Tone.now());
+                    setTimeout(() => synth.triggerAttackRelease('E4', '8n', Tone.now()), 150);
+                    setTimeout(() => synth.triggerAttackRelease('G4', '4n', Tone.now()), 300);
+                }
+            } catch(e) {}
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            document.getElementById('sound-icon').className = soundEnabled ? 'fa-solid fa-volume-high' : 'fa-solid fa-volume-xmark';
+            showToast(soundEnabled ? 'تم تفعيل الصوت' : 'تم كتم الصوت');
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast-box');
+            document.getElementById('toast-message').innerText = msg;
+            toast.style.opacity = '1';
+            toast.style.transform = 'translate(-50%, 0)';
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translate(-50%, -8px)';
+            }, 2500);
+        }
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('mode') === 'student' || window.location.hash === '#student') {
+                isStudentMode = true;
+            }
+
+            // Wait for Firebase to load
+            let attempts = 0;
+            while (!window.db && attempts < 25) {
+                await new Promise(r => setTimeout(r, 200));
+                attempts++;
+            }
+
+            if (window.db) {
+                const { signInAnonymously, doc, onSnapshot } = window.firebaseModules;
+                await signInAnonymously(window.auth).catch(e => console.log(e));
+
+                // Listen to Quiz State from Cloud (Valid even-segment path: artifacts_data/quiz_session)
+                onSnapshot(doc(window.db, 'artifacts_data', 'quiz_session'), (docSnap) => {
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        if (data.gameState !== undefined) gameState = data.gameState;
+                        if (data.currentQuestionIndex !== undefined) currentQuestionIndex = data.currentQuestionIndex;
+                        if (data.timeLeft !== undefined) timeLeft = data.timeLeft;
+                        if (data.isTimerPaused !== undefined) isTimerPaused = data.isTimerPaused;
+                        renderApp();
+                    }
+                }, (err) => console.log(err));
+
+                // Listen to Students from Cloud (Valid even-segment path: artifacts_data/quiz_students)
+                onSnapshot(doc(window.db, 'artifacts_data', 'quiz_students'), (docSnap) => {
+                    if (docSnap.exists()) {
+                        students = docSnap.data().list || [];
+                        renderApp();
+                    }
+                }, (err) => console.log(err));
+            }
+
+            const savedId = localStorage.getItem('tamer_cloud_student_id');
+            if (savedId) {
+                currentStudentId = savedId;
+            }
+
+            renderApp();
+        });
+
+        async function updateCloudState(newData) {
+            if (!window.db) return;
+            const { doc, setDoc, getDoc } = window.firebaseModules;
+            const ref = doc(window.db, 'artifacts_data', 'quiz_session');
+            const snap = await getDoc(ref);
+            let current = snap.exists() ? snap.data() : {};
+            await setDoc(ref, { ...current, ...newData }, { merge: true });
+        }
+
+        async function updateCloudStudents(newList) {
+            if (!window.db) return;
+            const { doc, setDoc } = window.firebaseModules;
+            const ref = doc(window.db, 'artifacts_data', 'quiz_students');
+            await setDoc(ref, { list: newList });
+        }
+
+        function renderApp() {
+            const teacherHeader = document.getElementById('teacher-header');
+            const teacherPanel = document.getElementById('teacher-panel');
+            const studentPanel = document.getElementById('student-panel');
+
+            if (isStudentMode) {
+                if (teacherHeader) teacherHeader.style.display = 'none';
+                if (teacherPanel) teacherPanel.style.display = 'none';
+                if (studentPanel) studentPanel.style.display = 'flex';
+                renderStudentView();
+            } else {
+                if (teacherHeader) teacherHeader.style.display = 'block';
+                if (teacherPanel) teacherPanel.style.display = 'flex';
+                if (studentPanel) studentPanel.style.display = 'none';
+                renderTeacherView();
+            }
+            const countEl = document.getElementById('teacher-player-count');
+            if (countEl) countEl.innerText = `${students.length} طالباً`;
+        }
+
+        // --- STUDENT ACTIONS ---
+        async function registerStudent(e) {
+            if (e) e.preventDefault();
+            const input = document.getElementById('student-name-input');
+            const name = input ? input.value.trim() : '';
+            if (!name) return;
+
+            let existing = students.find(s => s.name === name);
+            if (!existing) {
+                existing = { id: 's_' + Math.random().toString(36).substr(2, 6), name: name, score: 0, answers: {} };
+                students.push(existing);
+            }
+            currentStudentId = existing.id;
+            localStorage.setItem('tamer_cloud_student_id', currentStudentId);
+
+            await updateCloudStudents(students);
+            renderApp();
+            playSound('click');
+            showToast(`أهلاً بك يا ${name}! انضممت بنجاح`);
+        }
+
+        function logoutStudent() {
+            currentStudentId = null;
+            localStorage.removeItem('tamer_cloud_student_id');
+            renderApp();
+        }
+
+        async function studentSubmitAnswer(optionIndex) {
+            if (!currentStudentId) return;
+            const student = students.find(s => s.id === currentStudentId);
+            if (!student) return;
+
+            const q = questions[currentQuestionIndex];
+            student.answers[currentQuestionIndex] = optionIndex;
+            
+            if (optionIndex === q.correct) {
+                student.score += 100 + Math.floor(timeLeft * 2.5);
+                playSound('correct');
+            } else {
+                playSound('wrong');
+            }
+            await updateCloudStudents(students);
+            renderApp();
+            showToast(optionIndex === q.correct ? 'إجابة صحيحة! أحسنت 🌟' : 'إجابة خاطئة');
+        }
+
+        // --- TEACHER ACTIONS ---
+        async function startCompetition() {
+            if (students.length === 0) {
+                students.push({ id: 's_demo', name: 'طالب تجريبي', score: 0, answers: {} });
+                await updateCloudStudents(students);
+            }
+            gameState = 'question';
+            currentQuestionIndex = 0;
+            timeLeft = 30;
+            isTimerPaused = false;
+            playSound('start');
+            startTimer();
+            await updateCloudState({ gameState, currentQuestionIndex, timeLeft, isTimerPaused });
+            showToast('بدأت المسابقة السحابية بنجاح!');
+        }
+
+        async function nextQuestion() {
+            if (currentQuestionIndex < questions.length - 1) {
+                currentQuestionIndex++;
+                timeLeft = 30;
+                isTimerPaused = false;
+                gameState = 'question';
+                startTimer();
+                await updateCloudState({ gameState, currentQuestionIndex, timeLeft, isTimerPaused });
+            } else {
+                endCompetition();
+            }
+        }
+
+        async function endCompetition() {
+            gameState = 'finished';
+            if (timerInterval) clearInterval(timerInterval);
+            playSound('correct');
+            confetti({ particleCount: 150, spread: 90, origin: { y: 0.6 } });
+            await updateCloudState({ gameState });
+            showToast('انتهت المسابقة وتم إظهار النتائج النهائية!');
+        }
+
+        function startTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(async () => {
+                if (gameState === 'question' && !isTimerPaused) {
+                    if (timeLeft > 0) {
+                        timeLeft--;
+                        await updateCloudState({ timeLeft });
+                    } else {
+                        clearInterval(timerInterval);
+                        gameState = 'leaderboard';
+                        await updateCloudState({ gameState });
+                    }
+                }
+            }, 1000);
+        }
+
+        async function toggleTimerPause() {
+            isTimerPaused = !isTimerPaused;
+            await updateCloudState({ isTimerPaused });
+            showToast(isTimerPaused ? 'تم إيقاف الوقت مؤقتاً ⏸️' : 'تم استئناف الوقت ▶️');
+        }
+
+        async function resetCompetition() {
+            if (timerInterval) clearInterval(timerInterval);
+            gameState = 'waiting';
+            currentQuestionIndex = 0;
+            isTimerPaused = false;
+            students.forEach(s => { s.score = 0; s.answers = {}; });
+            await updateCloudStudents(students);
+            await updateCloudState({ gameState, currentQuestionIndex, timeLeft: 30, isTimerPaused: false });
+            showToast('تم إعادة ضبط المسابقة السحابية');
+        }
+
+        async function fillUpTo30Students() {
+            const firstNames = ["خالد", "عبدالله", "فيصل", "محمد", "سلطان", "عمر", "صالح", "إبراهيم", "رامي", "يوسف"];
+            const lastNames = ["الشهري", "القحطاني", "العمري", "الحربي", "الدوسري", "الغامدي"];
+            while (students.length < 12) {
+                const name = firstNames[Math.floor(Math.random() * firstNames.length)] + " " + lastNames[Math.floor(Math.random() * lastNames.length)];
+                if (!students.some(s => s.name === name)) {
+                    students.push({ id: 'bot_' + Math.random().toString(36).substr(2, 6), name, score: Math.floor(Math.random() * 400), answers: {} });
+                }
+            }
+            await updateCloudStudents(students);
+            showToast('تمت إضافة طلاب تجريبيين للمحاكاة');
+        }
+
+        async function clearAllStudents() {
+            students = [];
+            currentStudentId = null;
+            localStorage.removeItem('tamer_cloud_student_id');
+            await updateCloudStudents(students);
+            showToast('تم تفريغ قائمة الطلاب');
+        }
+
+        function toggleLeaderboardBarModal() {
+            const modal = document.getElementById('leaderboard-bar-modal');
+            const container = document.getElementById('leaderboard-bar-container');
+            if (!modal || !container) return;
+
+            let sortedStudents = [...students].sort((a, b) => b.score - a.score);
+            const maxScore = Math.max(...sortedStudents.map(s => s.score), 100);
+
+            container.innerHTML = sortedStudents.length === 0 ? '<p class="text-center text-xs text-slate-400 py-6">لا يوجد طلاب مسجلون حتى الآن.</p>' : sortedStudents.map((s, idx) => {
+                const percent = Math.min(Math.round((s.score / maxScore) * 100), 100);
+                const barColors = ['bg-amber-500', 'bg-indigo-500', 'bg-purple-500', 'bg-emerald-500', 'bg-blue-500'];
+                const color = barColors[idx % barColors.length];
+                return `
+                    <div class="space-y-1 bg-slate-900/80 p-3 rounded-2xl border border-slate-800">
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="font-bold text-white flex items-center gap-2">
+                                <span class="w-6 h-6 rounded-lg bg-slate-800 text-indigo-300 font-black flex items-center justify-center text-[11px]">${idx + 1}</span>
+                                ${s.name}
+                            </span>
+                            <span class="font-black text-amber-400">${s.score} نقطة</span>
+                        </div>
+                        <div class="w-full bg-slate-800 h-3 rounded-full overflow-hidden p-0.5">
+                            <div class="${color} h-full rounded-full transition-all duration-700" style="width: ${Math.max(percent, 5)}%"></div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            modal.classList.toggle('hidden');
+            modal.classList.toggle('flex');
+        }
+
+        // --- RENDERING TEACHER VIEW ---
+        function renderTeacherView() {
+            const stage = document.getElementById('teacher-stage');
+            const actionButtons = document.getElementById('teacher-action-buttons');
+            if (!stage || !actionButtons) return;
+
+            const studentLink = window.location.href.split('?')[0] + '?mode=student';
+
+            if (gameState === 'waiting') {
+                stage.innerHTML = `
+                    <div class="text-center py-2 px-2 space-y-3">
+                        <div class="inline-flex w-12 h-12 rounded-2xl bg-indigo-600/20 border border-indigo-500/40 items-center justify-center text-indigo-400 text-lg shadow-xl animate-bounce-slow">
+                            <i class="fa-solid fa-cloud-arrow-up"></i>
+                        </div>
+                        <div class="space-y-1">
+                            <h2 class="text-base md:text-lg font-black text-white">مسابقة التجارة الإلكترونية السحابية</h2>
+                            <p class="text-xs text-slate-300 max-w-xl mx-auto">امسح الـ QR بجوالك أو افتح الرابط أدناه للانضمام، وتظهر الأسماء والنتائج لحظياً على اللاب توب!</p>
+                        </div>
+                        
+                        <div class="flex flex-wrap items-center justify-center gap-4 pt-1">
+                            <div class="bg-white p-2.5 rounded-3xl shadow-2xl flex flex-col items-center border-4 border-indigo-500/30">
+                                <div id="qrcode-box" class="w-[110px] h-[110px] flex items-center justify-center"></div>
+                                <span class="text-[10px] font-bold text-slate-800 mt-1.5">امسح الـ QR للدخول الفوري</span>
+                            </div>
+
+                            <div class="glass-panel p-3.5 rounded-3xl border border-indigo-500/30 flex flex-col items-center justify-center min-w-[220px] gap-2">
+                                <span class="text-xs text-slate-400">رابط دخول الطلاب المباشر:</span>
+                                <a href="${studentLink}" target="_blank" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow transition flex items-center gap-1.5 truncate max-w-[200px]">
+                                    <i class="fa-solid fa-mobile-screen"></i> فتح شاشة الطالب
+                                </a>
+                            </div>
+                        </div>
+
+                        <div class="max-w-2xl mx-auto mt-2 bg-slate-900/80 p-3 rounded-2xl border border-slate-700">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-xs font-bold text-slate-300">الطلاب المسجلون سحابياً (${students.length}):</span>
+                                <span class="text-[11px] text-emerald-400 font-bold"><i class="fa-solid fa-circle text-[8px] animate-pulse ml-1"></i>متصل سحابياً</span>
+                            </div>
+                            <div class="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
+                                ${students.length === 0 ? '<p class="text-xs text-slate-500 w-full text-center py-2">في انتظار انضمام الطلاب...</p>' : ''}
+                                ${students.map(s => `
+                                    <span class="text-xs bg-slate-800 border border-slate-700 text-indigo-300 px-3 py-1 rounded-xl font-bold flex items-center gap-1.5 animate-pop">
+                                        <i class="fa-solid fa-user-graduate text-[10px] text-emerald-400"></i> ${s.name}
+                                    </span>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                const qrContainer = document.getElementById('qrcode-box');
+                if (qrContainer) {
+                    qrContainer.innerHTML = '';
+                    new QRCode(qrContainer, {
+                        text: studentLink,
+                        width: 110,
+                        height: 110,
+                        colorDark: "#0f172a",
+                        colorLight: "#ffffff",
+                        correctLevel: QRCode.CorrectLevel.H
+                    });
+                }
+
+                actionButtons.innerHTML = `
+                    <button onclick="startCompetition()" class="px-6 py-2.5 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 text-white font-black text-sm shadow-lg shadow-indigo-600/30 transition transform active:scale-95 flex items-center gap-2">
+                        <i class="fa-solid fa-play"></i>
+                        <span>بدء المسابقة الآن</span>
+                    </button>
+                `;
+            } else if (gameState === 'question') {
+                const q = questions[currentQuestionIndex];
+                let answeredCount = students.filter(s => s.answers[currentQuestionIndex] !== undefined).length;
+                let optionCounts = q.options.map((_, oIdx) => students.filter(s => s.answers[currentQuestionIndex] === oIdx).length);
+
+                stage.innerHTML = `
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between flex-wrap gap-2">
+                            <span class="text-xs bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-3 py-1 rounded-xl font-bold">
+                                ${q.lesson} (السؤال ${currentQuestionIndex + 1} من ${questions.length})
+                            </span>
+                            <div class="flex items-center gap-2 bg-slate-900/90 px-3 py-1 rounded-xl border border-slate-700">
+                                <button onclick="toggleTimerPause()" class="text-indigo-400 hover:text-white px-1 text-xs" title="إيقاف/استئناف الوقت">
+                                    <i class="fa-solid ${isTimerPaused ? 'fa-play text-emerald-400' : 'fa-pause text-amber-400'}"></i>
+                                </button>
+                                <i class="fa-solid fa-clock text-amber-400"></i>
+                                <span class="font-black text-amber-400 text-base">${timeLeft} ث</span>
+                            </div>
+                            <span class="text-xs bg-emerald-500/20 text-emerald-300 px-3 py-1 rounded-xl font-bold">
+                                أجاب ${answeredCount} من ${students.length}
+                            </span>
+                        </div>
+
+                        <div class="glass-panel p-4 rounded-3xl border border-indigo-500/30 text-center">
+                            <h2 class="text-base md:text-xl font-black text-white leading-relaxed">${q.question}</h2>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                            ${q.options.map((opt, oIdx) => {
+                                const count = optionCounts[oIdx];
+                                const barHeightPercent = Math.round((count / Math.max(students.length, 1)) * 100);
+                                const colors = ['bg-rose-500', 'bg-blue-500', 'bg-amber-500', 'bg-emerald-500'];
+                                return `
+                                    <div class="p-3 rounded-2xl bg-slate-900/80 border border-slate-700 flex flex-col justify-between gap-2 relative overflow-hidden">
+                                        <div class="flex items-center justify-between z-10">
+                                            <span class="text-xs font-bold text-slate-300">${String.fromCharCode(1575 + oIdx)} - ${opt}</span>
+                                            <span class="text-xs font-black bg-slate-800 px-2.5 py-0.5 rounded-lg text-white">${count} طالب</span>
+                                        </div>
+                                        <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                                            <div class="${colors[oIdx % colors.length]} h-full transition-all duration-500" style="width: ${barHeightPercent}%"></div>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+                actionButtons.innerHTML = `
+                    <button onclick="updateCloudState({ gameState: 'leaderboard' })" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700 transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-eye"></i>
+                        <span>عرض النتائج المؤقتة</span>
+                    </button>
+                    <button onclick="nextQuestion()" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-lg transition flex items-center gap-1.5">
+                        <span>السؤال التالي</span>
+                        <i class="fa-solid fa-arrow-left"></i>
+                    </button>
+                `;
+            } else if (gameState === 'leaderboard') {
+                const q = questions[currentQuestionIndex];
+                let sortedStudents = [...students].sort((a, b) => b.score - a.score);
+
+                stage.innerHTML = `
+                    <div class="space-y-3">
+                        <div class="text-center">
+                            <span class="text-xs bg-amber-500/20 text-amber-300 px-3 py-1 rounded-xl font-bold">نتيجة السؤال</span>
+                            <h2 class="text-lg font-black text-white mt-1">الإجابة الصحيحة: <span class="text-emerald-400">${q.options[q.correct]}</span></h2>
+                            <p class="text-xs text-slate-400 mt-0.5">${q.explanation}</p>
+                        </div>
+
+                        <div class="glass-panel p-3 rounded-3xl border border-slate-700 max-h-[280px] overflow-y-auto space-y-1.5">
+                            <h3 class="text-xs font-bold text-slate-400 mb-1">لوحة الصدارة المؤقتة:</h3>
+                            ${sortedStudents.map((s, idx) => `
+                                <div class="flex items-center justify-between p-2 rounded-xl ${idx === 0 ? 'bg-amber-500/20 border border-amber-400/40' : 'bg-slate-900/60 border border-slate-800'}">
+                                    <div class="flex items-center gap-2.5">
+                                        <span class="w-6 h-6 rounded-lg ${idx === 0 ? 'bg-amber-500 text-slate-950 font-black' : 'bg-slate-800 text-slate-300'} flex items-center justify-center text-xs font-bold">${idx + 1}</span>
+                                        <span class="text-xs font-bold text-white">${s.name}</span>
+                                    </div>
+                                    <span class="font-black text-amber-400 text-xs">${s.score} نقطة</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+                actionButtons.innerHTML = `
+                    <button onclick="nextQuestion()" class="px-5 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 text-white font-black text-xs shadow-lg transition flex items-center gap-1.5">
+                        <span>متابعة الأسئلة</span>
+                        <i class="fa-solid fa-arrow-left"></i>
+                    </button>
+                `;
+            } else if (gameState === 'finished') {
+                let sortedStudents = [...students].sort((a, b) => b.score - a.score);
+                const top3 = sortedStudents.slice(0, 3);
+
+                stage.innerHTML = `
+                    <div class="text-center py-4 space-y-4">
+                        <div class="inline-flex w-14 h-14 rounded-2xl bg-amber-500/20 border border-amber-400/40 items-center justify-center text-amber-400 text-2xl shadow-xl animate-bounce-slow">
+                            <i class="fa-solid fa-trophy"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-black text-white">إعلان نتائج المسابقة النهائية!</h2>
+                            <p class="text-xs text-slate-300 mt-0.5">أبطال وحدة التجارة الإلكترونية - إعداد أ . تامر مجدي المرشدي</p>
+                        </div>
+
+                        <div class="flex items-end justify-center gap-3 pt-1">
+                            ${top3[1] ? `
+                                <div class="glass-panel p-2.5 rounded-2xl border border-slate-700 flex flex-col items-center w-24 pb-4">
+                                    <i class="fa-solid fa-medal text-slate-300 text-xl mb-1"></i>
+                                    <span class="text-[11px] font-bold text-white truncate max-w-[80px]">${top3[1].name}</span>
+                                    <span class="text-xs font-black text-amber-400 mt-1">${top3[1].score} ن</span>
+                                </div>
+                            ` : ''}
+                            ${top3[0] ? `
+                                <div class="glass-panel p-3 rounded-2xl border-2 border-amber-400/60 flex flex-col items-center w-28 pb-6 bg-amber-500/10">
+                                    <i class="fa-solid fa-crown text-amber-400 text-2xl mb-1 animate-bounce"></i>
+                                    <span class="text-xs font-black text-white truncate max-w-[90px]">${top3[0].name}</span>
+                                    <span class="text-xs font-black text-amber-400 mt-1">${top3[0].score} ن</span>
+                                </div>
+                            ` : ''}
+                            ${top3[2] ? `
+                                <div class="glass-panel p-2.5 rounded-2xl border border-slate-700 flex flex-col items-center w-24 pb-3">
+                                    <i class="fa-solid fa-medal text-amber-700 text-xl mb-1"></i>
+                                    <span class="text-[11px] font-bold text-white truncate max-w-[80px]">${top3[2].name}</span>
+                                    <span class="text-xs font-black text-amber-400 mt-1">${top3[2].score} ن</span>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+                actionButtons.innerHTML = `
+                    <button onclick="resetCompetition()" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs shadow-lg transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-rotate-right"></i>
+                        <span>بدء مسابقة جديدة</span>
+                    </button>
+                `;
+            }
+        }
+
+        // --- RENDERING STUDENT VIEW ---
+        function renderStudentView() {
+            const stage = document.getElementById('student-stage');
+            const nameDisplay = document.getElementById('student-name-display');
+            const statusText = document.getElementById('student-status-text');
+            const scoreDisplay = document.getElementById('student-score-display');
+            const switchBtn = document.getElementById('switch-student-btn');
+            if (!stage) return;
+
+            if (!currentStudentId) {
+                if (nameDisplay) nameDisplay.innerText = "غير مسجل";
+                if (statusText) statusText.innerText = "أدخل اسمك للانضمام";
+                if (scoreDisplay) scoreDisplay.innerText = "0";
+                if (switchBtn) switchBtn.classList.add('hidden');
+
+                stage.innerHTML = `
+                    <div class="text-center py-4 px-2 space-y-3">
+                        <div class="w-14 h-14 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 mx-auto flex items-center justify-center text-indigo-400 text-xl">
+                            <i class="fa-solid fa-user-pen"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-black text-white">الانضمام للمسابقة السحابية</h3>
+                        </div>
+                        <form onsubmit="registerStudent(event); return false;" class="space-y-3 pt-1">
+                            <input type="text" id="student-name-input" placeholder="اكتب اسمك الثلاثي هنا..." class="w-full px-4 py-3.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs font-bold focus:outline-none focus:border-indigo-500 text-center shadow-inner" required autocomplete="off">
+                            <button type="submit" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 text-white font-black text-xs shadow-lg transition cursor-pointer">
+                                اشترك الآن في المسابقة 🚀
+                            </button>
+                        </form>
+                    </div>
+                `;
+            } else {
+                const student = students.find(s => s.id === currentStudentId) || { name: 'طالب', score: 0, answers: {} };
+                if (nameDisplay) nameDisplay.innerText = student.name;
+                if (statusText) statusText.innerText = "متصل سحابياً وجاهز";
+                if (scoreDisplay) scoreDisplay.innerText = student.score;
+                if (switchBtn) switchBtn.classList.remove('hidden');
+
+                if (gameState === 'waiting') {
+                    stage.innerHTML = `
+                        <div class="text-center py-6 px-3 space-y-3">
+                            <div class="w-14 h-14 rounded-full bg-emerald-500/20 text-emerald-400 text-xl flex items-center justify-center mx-auto animate-pulse">
+                                <i class="fa-solid fa-check"></i>
+                            </div>
+                            <h3 class="text-sm font-black text-white">أهلاً بك يا ${student.name}!</h3>
+                            <p class="text-xs text-slate-300">تم تسجيلك بنجاح، انتظر ريثما يبدأ المعلم المسابقة...</p>
+                        </div>
+                    `;
+                } else if (gameState === 'question') {
+                    const q = questions[currentQuestionIndex];
+                    const answered = student.answers && student.answers[currentQuestionIndex] !== undefined;
+                    const chosen = answered ? student.answers[currentQuestionIndex] : null;
+
+                    stage.innerHTML = `
+                        <div class="space-y-3 py-1">
+                            <div class="flex items-center justify-between">
+                                <span class="text-[11px] bg-indigo-500/20 text-indigo-300 px-2.5 py-1 rounded-lg font-bold">سؤال ${currentQuestionIndex + 1}</span>
+                                <span class="text-[11px] font-bold text-amber-400"><i class="fa-solid fa-clock ml-1"></i>${timeLeft} ث</span>
+                            </div>
+                            <p class="text-xs font-bold text-white leading-relaxed">${q.question}</p>
+                            
+                            <div class="grid grid-cols-1 gap-2 pt-1">
+                                ${q.options.map((opt, oIdx) => {
+                                    let btnStyle = "bg-slate-800/90 hover:bg-slate-700 text-slate-200 border-slate-700 cursor-pointer";
+                                    if (answered) {
+                                        if (oIdx === chosen) btnStyle = "bg-indigo-600 text-white border-indigo-400 shadow-md";
+                                        else btnStyle = "bg-slate-900/50 text-slate-500 border-slate-800 opacity-50 pointer-events-none";
+                                    }
+                                    return `
+                                        <button onclick="studentSubmitAnswer(${oIdx})" ${answered ? 'disabled' : ''} class="option-btn p-3 rounded-2xl border text-xs font-bold text-right flex items-center justify-between ${btnStyle}">
+                                            <span>${String.fromCharCode(1575 + oIdx)} - ${opt}</span>
+                                            ${answered && oIdx === chosen ? '<i class="fa-solid fa-circle-check text-white"></i>' : ''}
+                                        </button>
+                                    `;
+                                }).join('')}
+                            </div>
+                            ${answered ? '<p class="text-[11px] text-center text-emerald-400 font-bold mt-1">تم إرسال إجابتك بنجاح!</p>' : ''}
+                        </div>
+                    `;
+                } else if (gameState === 'leaderboard' || gameState === 'finished') {
+                    const q = questions[currentQuestionIndex];
+                    const answered = student.answers ? student.answers[currentQuestionIndex] : null;
+                    const isCorrect = answered === q.correct;
+
+                    stage.innerHTML = `
+                        <div class="text-center py-5 px-3 space-y-3">
+                            <div class="w-14 h-14 rounded-2xl ${isCorrect ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'} text-2xl flex items-center justify-center mx-auto">
+                                <i class="fa-solid ${isCorrect ? 'fa-circle-check' : 'fa-circle-xmark'}"></i>
+                            </div>
+                            <h3 class="text-sm font-black text-white">${isCorrect ? 'إجابة صحيحة ممتاز! 🎉' : 'إجابة غير صائبة'}</h3>
+                            <p class="text-xs text-slate-300">مجموع نقاطك الحالية: <span class="text-amber-400 font-black text-xs">${student.score} نقطة</span></p>
+                            <p class="text-[11px] text-slate-400 mt-2">انتظر انتقال المعلم للسؤال التالي...</p>
+                        </div>
+                    `;
+                }
+            }
+        }
+
+        function openQuestionManager() {
+            const container = document.getElementById('questions-list-container');
+            if (!container) return;
+            container.innerHTML = questions.map((q, idx) => `
+                <div class="p-3 rounded-2xl bg-slate-800/80 border border-slate-700/80 flex flex-col gap-1.5">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-md font-bold">${q.lesson} - سؤال ${idx + 1}</span>
+                        <span class="text-xs text-slate-400"><i class="fa-solid fa-clock ml-1"></i>30 ثانية</span>
+                    </div>
+                    <p class="text-xs font-bold text-white">${q.question}</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 mt-1">
+                        ${q.options.map((opt, oIdx) => `
+                            <div class="text-[11px] px-2.5 py-1 rounded-xl border ${oIdx === q.correct ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 font-bold' : 'bg-slate-900/60 text-slate-300 border-slate-700'}">
+                                ${oIdx === q.correct ? '<i class="fa-solid fa-check ml-1 text-emerald-400"></i>' : ''} ${opt}
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+            document.getElementById('question-modal').classList.remove('hidden');
+            document.getElementById('question-modal').classList.add('flex');
+        }
+
+        function closeQuestionManager() {
+            document.getElementById('question-modal').classList.remove('flex');
+            document.getElementById('question-modal').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
